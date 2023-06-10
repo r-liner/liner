@@ -1,44 +1,71 @@
 import nextcord
 from nextcord.ext import commands
+import configparser
+import os
 
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 intents = nextcord.Intents.all()
-intents.members = True
-intents.messages = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+owners = [1076076913359077407]
 
-
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user.name} (ID: {bot.user.id})")
+client = commands.Bot(command_prefix=config["bot"]["prefix"], intents=intents, owner_ids=owners)
 
 
-@bot.event
-async def on_message(message: nextcord.Message):
-    print(f"Received message: {message.content}")
-    await bot.process_commands(message)
+@client.command()
+@commands.is_owner()
+async def load(ctx, extension):
+    try:
+        client.load_extension(f"cogs.{extension}")
+        print(f"Cog {extension} is loaded.")
+        await ctx.send(f"Cog **{str.upper(extension)}** is loaded.")
+
+    except Exception as error:
+        print(error)
+        await ctx.send("Неверное имя или невозможно загрузить")
 
 
-@bot.command()
-async def dm(ctx, user: nextcord.User, *, message: str):
-    print(f"Sending DM to user {user.name} ({user.id}): {message}")
-    await user.send(message)
+@client.command()
+@commands.is_owner()
+async def unload(ctx, extension):
+    try:
+        client.unload_extension(f"cogs.{extension}")
+        print(f"Cog {str.upper(extension)} is unloaded.")
+        await ctx.send(f"Cog **{str.upper(extension)}** is unloaded.")
+
+    except Exception as error:
+        print(error)
+        await ctx.send("Неверное имя или невозможно загрузить")
 
 
-@bot.command()
-async def dm_role_members(ctx, role: nextcord.Role, *, message: str):
-    print(f"Sending DM to members of role {role.name} ({role.id}): {message}")
-    for member in role.members:
-        await member.send(message)
+@client.command()
+@commands.is_owner()
+async def reload(ctx, extension):
+    try:
+        client.unload_extension(f"cogs.{extension}")
+        client.load_extension(f"cogs.{extension}")
+        print(f"Cog {str.upper(extension)} is reloaded.")
+        await ctx.send(f"Cog **{str.upper(extension)}** is reloaded.")
+
+    except Exception as error:
+        print(error)
+        await ctx.send("Неверное имя или невозможно загрузить")
 
 
-@bot.command()
-async def start_saper(ctx):
-    print(f"Starting new game of saper.")
- 
-@bot.command()
-async def saper(ctx, row: int, col: int):
-    print(f"Choosing cell ({row}, {col}) in saper game.")
+for filename in os.listdir("./cogs"):
+    if filename.endswith(".py"):
+        client.load_extension(f"cogs.{filename[:-3]}")
 
-bot.run("")
+
+try:
+    client.run(config["bot"]["token"])
+
+except Exception as err:
+    print(err)
+
+except nextcord.PrivilegedIntentsRequired:
+    exit("Login failure! Privileged Intents not enabled.")
+
+except nextcord.errors.LoginFailure:
+    exit("Login failure! Token is required.")
