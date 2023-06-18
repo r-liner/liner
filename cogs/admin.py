@@ -26,6 +26,18 @@ class Admin(commands.Cog):
                 await ctx.send(f'Сообщение отправлено **{member.name}**')
             except nextcord.HTTPException:
                 await ctx.send(f'Не удалось отправить сообщение пользователю **{member.name}**')
+                
+    @commands.command()
+    async def give_access(self, ctx, user_name: str, channel_name: str):
+        member = ctx.guild.get_member_named(user_name)
+        channel = nextcord.utils.get(ctx.guild.channels, name=channel_name)
+        await channel.set_permissions(member, read_messages=True)
+
+    @commands.command()
+    async def remove_access(self, ctx, user_name: str, channel_name: str):
+        member = ctx.guild.get_member_named(user_name)
+        channel = nextcord.utils.get(ctx.guild.channels, name=channel_name)
+        await channel.set_permissions(member, overwrite=None)
 
 
 def setup(client):
